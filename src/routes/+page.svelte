@@ -1,14 +1,20 @@
 <script>
-  let hisseKodu = ''; // Arama kutusunun değerini tutacak değişken
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
 
+  // Sunucudaki load fonksiyonundan gelen verileri 'data' değişkeni ile yakalıyoruz.
+  export let data;
+
+  // $page.url.searchParams.get('hisse') ile mevcut URL'deki hisse kodunu alıyoruz.
+  // Bu, sayfa yenilendiğinde input kutusunun dolu kalmasını sağlar.
+  let hisseKodu = $page.url.searchParams.get('hisse') || '';
+
+  // Arama fonksiyonu. Artık sadece URL'yi güncelliyoruz.
   function hisseAra() {
-    // Şimdilik sadece konsola yazdıracağız.
-    // Bir sonraki adımda burada API'den veri çekeceğiz.
     if (hisseKodu) {
-      console.log('Aranan Hisse Kodu:', hisseKodu.toUpperCase());
-      alert(`'${hisseKodu.toUpperCase()}' için arama yapılıyor... (F12 ile konsolu kontrol et)`);
-    } else {
-      alert('Lütfen bir hisse senedi kodu girin.');
+      // goto ile sayfayı yeniden yüklemeden URL'yi değiştiriyoruz.
+      // SvelteKit bu URL değişikliğini algılayıp sunucudaki load fonksiyonunu tekrar çalıştırır.
+      goto(`/?hisse=${hisseKodu.toUpperCase()}`);
     }
   }
 </script>
@@ -27,6 +33,30 @@
       Analiz Et
     </button>
   </div>
+
+  <!-- Sonuçları gösterme alanı -->
+  <div class="sonuc-alani">
+    {#if data.sirketProfili}
+      <!-- Veri geldiyse Şirket Profili Kartını göster -->
+      <div class="kart">
+  		<h2>{data.sirketProfili.name} ({data.sirketProfili.symbol})</h2>
+  		<p class="sektor">Piyasa Değeri: {(data.sirketProfili.marketCap / 1000000000).toFixed(2)} Milyar USD</p>
+  		<p>Güncel Fiyat: {data.sirketProfili.price} USD</p>
+  <		p>Borsa: {data.sirketProfili.exchange}</p>
+	  </div>
+    {:else if data.error}
+      <!-- Hata varsa Hata Mesajını göster -->
+      <div class="kart hata">
+        <p>{data.error}</p>
+      </div>
+    {:else if $page.url.searchParams.get('hisse')}
+      <!-- Arama yapılmış ama henüz veri gelmemişse Yükleniyor... göster -->
+      <div class="kart">
+        <p>Yükleniyor...</p>
+      </div>
+    {/if}
+  </div>
+
 </main>
 
 <style>
@@ -48,6 +78,7 @@
     gap: 0.5rem;
     width: 100%;
     max-width: 400px;
+    margin-bottom: 2rem;
   }
 
   .arama-kutusu input {
@@ -71,5 +102,49 @@
 
   .arama-kutusu button:hover {
     background-color: #0056b3;
+  }
+
+  .sonuc-alani {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .kart {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-top: 1rem;
+  }
+
+  .kart h2 {
+    margin-top: 0;
+    color: #003366;
+  }
+
+  .kart .sektor {
+    font-style: italic;
+    color: #555;
+    margin-bottom: 1rem;
+  }
+  
+  .kart .aciklama {
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .kart a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  .kart a:hover {
+    text-decoration: underline;
+  }
+  
+  .kart.hata {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #c62828;
   }
 </style>
